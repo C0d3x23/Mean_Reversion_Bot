@@ -39,28 +39,30 @@ while True:
 
             #Check daily trend
             if daily_close_price[-1] > daily_sma[-1]:
-
                 m15_bars = exchange.fetch_ohlcv(symbol, timeframe='15m', limit=sma_period)
                 m15_close_price = [bar[4] for bar in m15_bars]
-                m15_rsi = ta.RSI(np.array(m15_close_price), rsi_period)
-                print(f'm15_RSI = {symbol} | {m15_rsi[-1]}')
-                last_bar = m15_bars
+                m15_sma = ta.SMA(np.array(m15_close_price),sma_period)
 
-    #             if m15_rsi[-1] < rsi_oversold:
-    #                 open_positions = sum(len(exchange.fetch_open_orders(symbol)) for symbol in symbols)
-    #                 if open_positions < max_open_position:
-    #                     balance = exchange.fetch_balance()['total']['USDT']
-    #                     trade_amount = balance * per_trade_amount
-    #                     buy = exchange.create_market_buy_order(symbol, trade_amount)
-    #                     print(f'Entered Trade: {symbol}')
+                if m15_close_price > m15_sma:
+                    m15_rsi = ta.RSI(np.array(m15_close_price), rsi_period)
+                    print(f'm15_RSI = {symbol} | {m15_rsi[-1]}')
+                    last_bar = m15_bars
 
-    #             elif m15_rsi[-1] > rsi_overbought:
-    #                 open_positions = sum(len(exchange.fetch_open_orders(symbol)) for symbol in symbols)
-    #                 if open_positions > 0:
-    #                     open_orders = exchange.fetch_open_orders(symbol)
-    #                     for order in open_orders:
-    #                         sell = exchange.cancel_order(order['id'])
-    #                         print(f'Exited Trade: {symbol}')
+                    if m15_rsi[-1] < rsi_oversold:
+                        open_positions = sum(len(exchange.fetch_open_orders(symbol)) for symbol in symbols)
+                        if open_positions < max_open_position:
+                            balance = exchange.fetch_balance()['total']['USDT']
+                            trade_amount = balance * per_trade_amount
+                            buy = exchange.create_market_buy_order(symbol, trade_amount)
+                            print(f'Entered Trade: {symbol}')
 
-    # else:
-    #     break
+                    elif m15_rsi[-1] > rsi_overbought:
+                        open_positions = sum(len(exchange.fetch_open_orders(symbol)) for symbol in symbols)
+                        if open_positions > 0:
+                            open_orders = exchange.fetch_open_orders(symbol)
+                            for order in open_orders:
+                                sell = exchange.cancel_order(order['id'])
+                                print(f'Exited Trade: {symbol}')
+
+    else:
+        break
