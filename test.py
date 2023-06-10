@@ -1,143 +1,14 @@
-# import ccxt
-# import pandas as pd
-# import credentials
-# import talib as ta
-# import numpy as np
-# import datetime
-# from pytz import timezone
-# import schedule
-# import time
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Mean Reversion Bot
 
-# exchange = ccxt.binanceusdm({
-#     'enableRateLimit': True,
-#     'apiKey': credentials.api_key,
-#     'secret': credentials.api_secret,
-#     'defaultType': 'future'
-# })
+Import necessary Libraries
+Import API Connection and credentials
+Import variables 
+Check volume per coin, 100k above is the target coin to trade ### Done
+Check the correlation of the altcoins to etherium, acceptable correlation will be traded and store it to a database ### Done
+Use the filtered database  to refilter using the trading strategy indicators
 
-# # Variables
-# symbols = ['ETH/USDT','SOL/USDT', 'ADA/USDT','BNB/USDT','LTC/USDT','DOGE/USDT','MATIC/USDT','LINK/USDT']
-# trend = '1d'
-# execTf = '15m'
-# rsiPeriod = 2
-# rsiOverBought = 90
-# rsiOverSold = 10
-# smaPeriod = 200
-# startTrade = 21  # New York session start time (9:00 PM UTC)
-# endTrade = 11  # London session end time (11:00 AM UTC)
-# leverage = 1
-# marginMode = 'cross'
-
-# inPosition = False
-
-# def fetchOpenPositions(symbol):
-#     positions = exchange.fetchPositions(symbols=[symbol])
-#     for position in positions:
-#         order = float(position['info']['unRealizedProfit'])
-#         if order != 0.00000000:
-#             print(f'{symbol} {order}')
-
-# def fetchDailyTrend(symbol):
-#     dailyBars = exchange.fetchOHLCV(symbol, timeframe=trend, limit=smaPeriod)
-#     dailyClosePrice = [bar[4] for bar in dailyBars]
-#     dailySma = ta.SMA(np.array(dailyClosePrice), smaPeriod)
-#     if dailyClosePrice[-1] > dailySma[-1]:
-#         print(f'{symbol} is bullish, waiting for exec_tf confirmation')
-#         return True
-#     return False
-
-# def checkExecTfRsi(symbol):
-#     execTfBars = exchange.fetchOHLCV(symbol, timeframe=execTf, limit=smaPeriod)
-#     execTfClosePrice = [bar[4] for bar in execTfBars]
-#     execTfRsi = ta.RSI(np.array(execTfClosePrice), rsiPeriod)
-#     return execTfRsi[-1]
-
-# def buyingCondition(symbol):
-#     exchange.setLeverage(leverage = leverage, symbol=symbol)
-#     exchange.setMarginMode(marginMode = marginMode, symbol=symbol)
-#     ticker = exchange.fetchTicker((symbol))
-#     askPrice = ticker['close']
-#     balance = exchange.fetchBalance()['total']['USDT']
-#     buyQuantity = (balance * 0.5) / askPrice
-#     buy = exchange.createMarketOrder(symbol, side='BUY', amount=buyQuantity)
-#     print(buy)
-#     print('------------------------------------')
-
-# def sellingCondition(symbol):
-#     ticker = exchange.fetchTicker((symbol))
-#     bidPrice = ticker['close']
-#     coinBalance = exchange.fetchBalance()['total'][symbol.split('/')[0]]
-#     sellQuantity = coinBalance / bidPrice
-#     sell = exchange.createMarketOrder(symbol, side='SELL', amount=sellQuantity)
-#     print(sell)
-
-# def MeanReversionBot():
-#     global inPosition
-#     execTfRsi = None  # Initialize execTfRsi variable
-
-#     for symbol in symbols:
-#         if execTfRsi < rsiOverSold:
-#             fetchDailyTrend(symbol)
-#             execTfRsi = checkExecTfRsi(symbol)
-#             buyingCondition(symbol)
-#             fetchOpenPositions(symbol)
-#             inPosition = True
-#             break
-
-#     if inPosition:
-#         fetchDailyTrend(symbol)
-#         execTfRsi = checkExecTfRsi(symbol)
-#         if execTfRsi > rsiOverBought:
-#             sellingCondition(symbol)
-#             inPosition = False
-
-# def runBot():
-#     MeanReversionBot()
-
-# schedule.every(10).seconds.do(runBot)
-
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
-
-
-
-# # def MeanReversionBot():
-# #     global inPosition
-
-# #     for symbol in symbols:
-# #         if fetchOpenPositions(symbol):
-# #             inPosition = True
-# #             break
-
-# #     if inPosition:
-# #         return
-
-# #     for symbol in symbols:
-# #         if fetchOpenPositions(symbol):
-# #             execTfRsi = checkExecTfRsi(symbol)
-# #             if execTfRsi > rsiOverBought and inPosition:
-# #                 sellingCondition(symbol)
-# #                 inPosition = False
-# #                 break
-# #             elif execTfRsi < rsiOversold and not inPosition:
-# #                 fetchDailyTrend(symbol)
-# #                 buyingCondition(symbol)
-# #                 fetchOpenPositions(symbol)
-# #                 break
-
-
-# # def runBot():
-# #     MeanReversionBot()
-
-
-# # schedule.every(10).seconds.do(runBot)
-
-# # while True:
-# #     schedule.run_pending()
-# #     time.sleep(1)
-
-
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 import ccxt
 import pandas as pd
@@ -148,6 +19,14 @@ import datetime
 from pytz import timezone
 import schedule
 import time
+from sqlalchemy import create_engine
+
+sma_limit = 200
+
+engine = create_engine('sqlite:///coin_correl_vol.db')
+
+db = pd.read_sql('combined_data', engine)
+# print(db)
 
 exchange = ccxt.binanceusdm({
     'enableRateLimit': True,
@@ -156,23 +35,23 @@ exchange = ccxt.binanceusdm({
     'defaultType': 'future'
 })
 
-# Variables
-symbols = ['ETH/USDT','SOL/USDT', 'ADA/USDT','BNB/USDT','LTC/USDT','DOGE/USDT','MATIC/USDT','LINK/USDT']
-trend = '1d'
-exec_tf = '1m'
-rsi_period = 2
-rsi_overbought = 90
-rsi_oversold = 10
-sma_period = 200
-start_trade = 21  # New York session start time (9:00 PM UTC)
-end_trade = 11  # London session end time (11:00 AM UTC)
-leverage = 1
-marginMode = 'cross'
+for _, row in db.iterrows():
+    coin = row['Coin']
+    daily_bars = exchange.fetchOHLCV(coin, timeframe = '1d', limit = sma_limit)
+    daily_close = [bar[4] for bar in daily_bars]
+    daily_sma = ta.SMA(np.array(daily_close), 200)
 
-def fetch_open_positions():
-    for symbol in symbols:
-        positions = exchange.fetchPositions(symbols=[symbol])
-        for position in positions:
-            order = float(position['info']['unRealizedProfit'])
-            if order != 0.00000000:
-                print(f'{symbol} {order}')
+    if daily_close[-1] > daily_sma[-1]:
+        exec_tf_bars = exchange.fetchOHLCV(coin, timeframe='5m', limit=sma_limit)
+        exec_tf_close = [bar[4] for bar in exec_tf_bars]
+        exec_tf_SMA = ta.SMA(np.array(exec_tf_close), sma_limit)
+
+    if exec_tf_close[-1] > exec_tf_SMA[-1]:
+        exec_tf_bar = exec_tf_bars
+        exec_tf_close_price = [bar[4] for bar in exec_tf_bar]
+        exec_tf_rsi = ta.RSI(np.array(exec_tf_close), rsi_period)
+        print(f'{coin} is bullish, | RSI {exec_tf_rsi[-1]}')
+
+    else:
+        print('No bullish pairs at the moment')
+
