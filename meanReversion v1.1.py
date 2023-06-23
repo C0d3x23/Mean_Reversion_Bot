@@ -10,6 +10,20 @@ Trades single coin and 1 open position for the entire trading session only
 Does not print specific details about the order
 Does not store the data to a file for analysis purposes
 
+Updates to be made:
+
+Print specific details for every order
+store data to a file for analysis purposes
+Fix the naming convention
+schedule the trade
+    Trade only during 2000H - 0800H
+    Close open positions at closing session
+    Include a scan for open positions at the initial run
+
+Trade atleast 5 coins
+Trade 2 open positions
+
+Initial Balance = $46.89
 """
 import ccxt
 import pandas as pd
@@ -36,11 +50,16 @@ exchange = ccxt.binanceusdm({
 })
 
 def fetch_data(symbol, tf, limit):
-    frame = pd.DataFrame(exchange.fetchOHLCV(symbol=symbol, timeframe=tf, limit=limit))
-    frame = frame.iloc[:, :5]
-    frame.columns = ['Timestamp', 'Open', 'High', 'Low', 'Close']
-    frame['Timestamp'] = pd.to_datetime(frame.Timestamp, unit='ms')
-    return frame
+    try:
+        frame = pd.DataFrame(exchange.fetchOHLCV(symbol=symbol, timeframe=tf, limit=limit))
+        frame = frame.iloc[:, :5]
+        frame.columns = ['Timestamp', 'Open', 'High', 'Low', 'Close']
+        frame['Timestamp'] = pd.to_datetime(frame.Timestamp, unit='ms')
+        return frame
+    except ccxt.RequestTimeout as e:
+        print("Request Timeout. Retrying...")
+        time.sleep(1)
+        return fetch_data(symbol, tf, limit)
 
 def SMA(df, window=200):
     df['SMA'] = df['Close'].rolling(window).mean()
@@ -97,7 +116,20 @@ def buy_sell():
         print(sell)
         in_position = False
 
+def scanPositions():
+    global in_position
+
+    pos = pd.DataFrame(exchange.fetchPositions(symbols=['ETH/USDT']))
+    pos['Active'] = pos['entryPrice'] > 0
+    active_count = (pos['Active'] == True).sum()
+    open_positions = active_count == 1
+    if open_positions:
+        in_position = True
+    else:
+        pass
+
 def MRB():
+    scanPositions()
     update_data()
     buy_sell()
 
@@ -105,5 +137,9 @@ def MRB():
 schedule.every(10).seconds.do(MRB)
 
 while True:
-    schedule.run_pending()
-    time.sleep(1)
+    try:
+        schedule.run_pending()
+        time.sleep(1)
+    except ccxt.RequestTimeout as e:
+        print("Request Timeout. Retrying...")
+        time.sleep(1)
