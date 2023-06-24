@@ -12,18 +12,19 @@ Does not store the data to a file for analysis purposes
 
 Updates to be made:
 
-Print specific details for every order
 store data to a file for analysis purposes
 Fix the naming convention
 schedule the trade
     Trade only during 2000H - 0800H
     Close open positions at closing session
-    Include a scan for open positions at the initial run
-
-Trade atleast 5 coins
+Scan atleast 5 coins
 Trade 2 open positions
 
-Initial Balance = $46.89
+Done:
+Include a scan for open positions at the initial run
+Print specific details for every order
+
+Initial Balance = $61.29
 """
 import ccxt
 import pandas as pd
@@ -71,8 +72,8 @@ def update_data():
     global daily, m5
 
     # Fetch new data
-    daily = fetch_data('ETH/USDT', '1d', 201)
-    m5 = fetch_data('ETH/USDT', '5m', 201)
+    daily = fetch_data('SOL/USDT', '1d', 201)
+    m5 = fetch_data('SOL/USDT', '5m', 201)
 
     # Calculate SMA
     SMA(daily)
@@ -93,33 +94,72 @@ def update_data():
     m5['Sell'] = m5['RSI'] > 90
     m5['Buy'] = m5['Buy'].shift().fillna(False)
     m5['Sell'] = m5['Sell'].shift().fillna(False)
-    print(".", end="", flush=True)
 
 def buy_sell():
     global in_position
 
     if not in_position and m5.Buy.iloc[-1]:
-        exchange.setLeverage(leverage=leverage, symbol='ETH/USDT')
-        exchange.setMarginMode(marginMode=marginMode, symbol='ETH/USDT')
-        ticker = exchange.fetchTicker('ETH/USDT')
+        exchange.setLeverage(leverage=leverage, symbol='SOL/USDT')
+        exchange.setMarginMode(marginMode=marginMode, symbol='SOL/USDT')
+        ticker = exchange.fetchTicker('SOL/USDT')
         ask_price = float(ticker['info']['lastPrice'])
         balance = exchange.fetchBalance()['total']['USDT']
         buy_quantity = (balance * leverage) / ask_price
-        buy = exchange.createMarketOrder('ETH/USDT', side='BUY', amount=buy_quantity)
+        buy = exchange.createMarketOrder('SOL/USDT', side='BUY', amount=buy_quantity)
         print(buy)
+        symbol = buy['info']['symbol']
+        side = buy['info']['side']
+        unix = int(buy['info']['updateTime'])
+        dt_object = datetime.datetime.fromtimestamp(unix / 1000)  # Divide by 1000 to convert from milliseconds to seconds
+        timestamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
+        price = buy['price']
+        amount = buy['amount']
+        print(100 * '-')
+        print(f'Timestamp     :    {timestamp} \n \
+            Side          :    {side} \n \
+            Symbol        :    {symbol} \n \
+            Amount        :    {amount} \n \
+            Price         :    $ {price}')
+        print(100 * '-' + '\n')
         in_position = True
 
+    else:
+        if in_position:
+            pos = exchange.fetchPositions(['SOL/USDT'])
+            unrealizedPnl = pos[-1]['unrealizedPnl']
+            percentage = pos[-1]['percentage']
+            print(f' Stats : {unrealizedPnl} / {percentage}')
+
     if in_position and m5.Sell.iloc[-1]:
-        pos = exchange.fetchPositions(symbols=['ETH/USDT'])
+        pos = exchange.fetchPositions(symbols=['SOL/USDT'])
         sell_qty = float(pos[-1]['info']['positionAmt'])
-        sell = exchange.createMarketOrder('ETH/USDT', side='SELL', amount=sell_qty)
+        sell = exchange.createMarketOrder('SOL/USDT', side='SELL', amount=sell_qty)
         print(sell)
+        symbol = sell['info']['symbol']
+        side = sell['info']['side']
+        unix = int(sell['info']['updateTime'])
+        dt_object = datetime.datetime.fromtimestamp(unix / 1000)  # Divide by 1000 to convert from milliseconds to seconds
+        timestamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
+        price = sell['price']
+        amount = sell['amount']
+        pnl((sell_price - buy_price) / buy_price) * 100
+        print(100 * '-')
+        print(f'Timestamp     :    {timestamp} \n \
+            Side          :    {side} \n \
+            Symbol        :    {symbol} \n \
+            Amount        :    {amount} \n \
+            Price         :    $ {price}')
+        print(100 * '-' + '\n')
         in_position = False
+
+    else:
+        if not in_position and m5.overall_trend.iloc:
+            print(".", end="", flush=True)
 
 def scanPositions():
     global in_position
 
-    pos = pd.DataFrame(exchange.fetchPositions(symbols=['ETH/USDT']))
+    pos = pd.DataFrame(exchange.fetchPositions(symbols=['SOL/USDT']))
     pos['Active'] = pos['entryPrice'] > 0
     active_count = (pos['Active'] == True).sum()
     open_positions = active_count == 1

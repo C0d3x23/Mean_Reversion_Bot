@@ -1,0 +1,27 @@
+[
+    {
+        "Coin": "ETH/USDT",
+        "Correlation": 1.0,
+        "Volume": 266080.244
+    },
+    {
+        "Coin": "LTC/USDT",
+        "Correlation": 0.8341821474470129,
+        "Volume": 947955.599
+    },
+    {
+        "Coin": "AVAX/USDT",
+        "Correlation": 0.8313049757725652,
+        "Volume": 1201434.0
+    },
+    {
+        "Coin": "DOGE/USDT",
+        "Correlation": 0.7935780011497764,
+        "Volume": 682090392.0
+    },
+    {
+        "Coin": "SOL/USDT",
+        "Correlation": 0.7730136595151336,
+        "Volume": 4449497.0
+    }
+]
