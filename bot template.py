@@ -14,8 +14,8 @@ TRADE_AMOUNT_PERCENTAGE = 0.1  # 10% of account balance per trade
 async def main():
     # Create Binance exchange instance
     exchange = ccxt.binance({
-        'apiKey': 'UMjRag1HfZFAaL5FgU4sfBS5R4WUOXLKPVOspmjZgsNyxk2Tk16iIumbtH2oVhub',
-        'secret': 'tGhc7g0FyHZyOOwmmP9q0DCOy8dQA9MXZJYiGS5mRQPQ5awJs8BMkVuHjuRvLHyU',
+        'apiKey': '',
+        'secret': '',
     })
     
     # Start trading loop
