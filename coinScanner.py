@@ -10,7 +10,7 @@ pd.set_option('display.max_rows', None)
 
 import requests
 
-API_KEY = '35e8a8c7-0d8a-4c85-87ec-bc61bf24df3f'  # Replace with your actual CoinMarketCap API key
+API_KEY = '35e8a8c7-0d8a-4c85-87ec'
 
 top_crypto = []
 
